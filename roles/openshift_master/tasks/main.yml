@@ -308,3 +308,11 @@
 - name: Set the cluster user password
   shell: echo {{ openshift_master_cluster_password | quote }} | passwd --stdin hacluster
   when: install_result | changed
+
+- name: Set up registry on the infra node if openshift_psersist_registry is defined and true step 1 (add registry to scc)
+  command: 'oadm policy add-scc-to-user privileged system:serviceaccount:default:registry'
+  when: openshift_persist_registry is defined and openshift_persist_registry | bool
+
+- name: Set up registry on the infra node if openshift_psersist_registry is defined and true step 2 (create docker-registry with persistent volume definition)
+  command: "oadm registry --service-account=registry --config={{ openshift.common.config_base }}/master/admin.kubeconfig --images='registry.access.redhat.com/openshift3/ose-${component}:${version}' --mount-host=/mnt/registry --selector='type=infra'"
+  when: openshift_persist_registry is defined and openshift_persist_registry | bool
